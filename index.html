@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-Hans" data-lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>大模型自学 · weights &amp; tokens</title>
+<meta name="description" content="大语言模型(LLM)的中英双语自学站,重点讲透微调:Transformer 与注意力、分词与缩放定律、预训练与算力预算、解码与量化推理、提示与上下文工程、SFT 数据与超参、LoRA/QLoRA 与显存账本、RLHF/DPO 对齐、评估与上线成本。每章先动手做一个可交互「训练场实验」,再读「解释」。A bilingual, hands-on course on large language models with a deep focus on fine-tuning — every chapter opens with a live experiment, then explains the mechanics behind it." />
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+
+<link rel="stylesheet" href="styles.css?v=2" />
+<link rel="stylesheet" href="llm.css?v=2" />
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React + Babel (pinned) -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+  <!-- Markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+
+  <!-- App scripts (order matters: viz.jsx defines the shared helpers viz2.jsx and
+       viz3.jsx use, and viz3.jsx defines the VIZ registry + <Viz> that pages.jsx
+       renders). ?v is bumped on each release to bust caches. -->
+  <script type="text/babel" src="i18n.jsx?v=2"></script>
+  <script type="text/babel" src="data.jsx?v=2"></script>
+  <script type="text/babel" src="viz.jsx?v=2"></script>
+  <script type="text/babel" src="viz2.jsx?v=2"></script>
+  <script type="text/babel" src="viz3.jsx?v=2"></script>
+  <script type="text/babel" src="pages.jsx?v=2"></script>
+  <script type="text/babel" src="app.jsx?v=2"></script>
+</body>
+</html>
