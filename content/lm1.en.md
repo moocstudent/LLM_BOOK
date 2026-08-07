@@ -12,6 +12,8 @@ As a formula: `Attention(Q,K,V) = softmax(QKᵀ/√d)·V`. The heat map in the e
 
 **Why is this so useful?** Because it is the only operation that lets two distant tokens interact directly, at a cost independent of their distance. Before it, recurrent networks had to pass information along step by step, and twenty words was enough to wash it out. Under attention, token 1 is exactly as close to token 100 as token 99 is.
 
+@fig lm1-qkv
+
 ## The √d is not decoration
 
 That scaling factor exists for a very specific numerical reason. The dot product of two d-dimensional vectors whose entries are zero-mean, unit-variance random numbers has variance d, hence standard deviation √d. So the larger d is, the larger the dot products get in absolute terms.
@@ -21,6 +23,8 @@ And softmax has a property: the larger its inputs in absolute value, the closer 
 Dividing by √d pulls the variance back to one, keeping softmax in the range where it is sensitive. Turn off "divide by √d" in the experiment and push d to 1024 to watch the peak weight climb past 99%.
 
 Incidentally, this move — dividing by a number to control how sharp a distribution is — reappears in the decoding chapter, where it is called **temperature**. They are the same mathematical action.
+
+@fig lm1-scale
 
 ## Multi-head: several relations at once
 
@@ -46,6 +50,8 @@ Three components, three jobs:
 - **The feed-forward network (FFN)** is a two-layer network that expands (usually 4×) and contracts. It holds roughly two-thirds of the model's parameters, and its job complements attention: attention moves information between positions, the FFN transforms it within a position. There is substantial evidence that **the model's "knowledge" lives mostly in the FFN**, which is why the LoRA chapter's decision about whether to adapt the MLP matters as much as it does.
 
 Stack that block N times, add an embedding layer in front and a linear projection to the vocabulary at the end, and you have a complete language model. Everything remaining is engineering detail and scale.
+
+@fig lm1-block
 
 ---
 

@@ -13,6 +13,8 @@ Step 2's MFU (Model FLOPs Utilization) is the only term requiring experience. It
 
 Another common trap is which peak you use. The largest number on a GPU spec sheet is usually sparse fp8 or int8, while training runs in bf16 at roughly half that or less. The experiment above has already done that division for you.
 
+@fig lm5-flops
+
 ## Where the MFU goes
 
 The missing 60% did not vanish; it went into three things.
@@ -34,6 +36,8 @@ When one device cannot hold the model, there are three ways to cut, usually comb
 **Pipeline parallelism**: place different layers on different devices. Minimal communication (only activations at layer boundaries) but bubbles, and the highest implementation complexity.
 
 Practical guidance: **start with data parallelism (with ZeRO/FSDP), add tensor parallelism within a machine when it does not fit, and only consider pipeline parallelism across machines.** Most fine-tuning needs only the first.
+
+@fig lm5-parallel
 
 ## What the estimate is really for
 

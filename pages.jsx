@@ -13,9 +13,41 @@ const ProseBlock = ({ md }) => {
   if (!md || !md.trim()) return null;
   return <div dangerouslySetInnerHTML={{ __html: html }} />;
 };
-const Prose = ({ md, className }) => (
-  <div className={className || "course-prose"}><ProseBlock md={md} /></div>
-);
+
+// A lecture figure is written in the markdown as a line of its own:
+//     @fig lm1-qkv
+// Split the source on those markers so the SVG (defined in figures*.jsx and
+// looked up through <Figure>) is rendered as a real React node between the
+// surrounding paragraphs instead of being swallowed by marked.
+const FIG_MARK = /^@fig[ \t]+([A-Za-z0-9_-]+)[ \t]*$/gm;
+function splitFigures(md) {
+  if (!md) return [];
+  const out = [];
+  let last = 0, m;
+  FIG_MARK.lastIndex = 0;
+  while ((m = FIG_MARK.exec(md)) !== null) {
+    out.push({ kind: "md", text: md.slice(last, m.index) });
+    out.push({ kind: "fig", name: m[1] });
+    last = m.index + m[0].length;
+  }
+  out.push({ kind: "md", text: md.slice(last) });
+  return out;
+}
+
+const Prose = ({ md, className }) => {
+  const parts = React.useMemo(() => splitFigures(md), [md]);
+  let figNo = 0;
+  return (
+    <div className={className || "course-prose"}>
+      {parts.map((p, i) => {
+        if (p.kind !== "fig") return <ProseBlock key={i} md={p.text} />;
+        if (typeof Figure === "undefined") return null;
+        figNo += 1;
+        return <Figure key={i} name={p.name} idx={figNo} />;
+      })}
+    </div>
+  );
+};
 
 // Fetch content/<id>.<lang>.md; fall back to the other language, then to a flag.
 function useChapterContent(id, lang) {

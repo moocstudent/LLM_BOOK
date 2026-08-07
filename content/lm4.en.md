@@ -26,6 +26,8 @@ From raw web pages to trainable data there are five stages:
 
 **Five: mixing.** Decide the shares of web text, code, maths, books and other languages.
 
+@fig lm4-funnel
+
 ## Why code and maths punch above their weight
 
 A repeatedly verified phenomenon: **adding code and mathematics to the training data improves structured reasoning on tasks that involve neither.**
@@ -44,6 +46,8 @@ It arrives two ways, neither fully avoidable:
 - **Indirect contamination**: variants, discussions and worked solutions are scattered across forums and blogs. This one is nearly impossible to remove.
 
 The practical implication is immediate: **public leaderboard scores cannot serve as your acceptance criteria.** You need your own never-published eval set, which is exactly what module eight is about. When two models differ by three points on a public benchmark, you cannot tell whether that is capability or contamination.
+
+@fig lm4-contam
 
 ---
 

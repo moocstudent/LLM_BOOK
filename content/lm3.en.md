@@ -12,6 +12,8 @@ L(N, D) = E + A/N^α + B/D^β
 
 Three terms: an irreducible loss E (the entropy of language itself, which no model size reaches zero on), a term for insufficient parameters, and a term for insufficient data. Both α and β land near 0.3 — **which means returns diminish fast: a tenfold increase in parameters cuts the second term only to 46% of its value.**
 
+@fig lm3-powerlaw
+
 ## 6ND: the arithmetic of compute
 
 Estimating training compute has an approximation that is almost unreasonably useful:
@@ -35,6 +37,8 @@ Because C ≈ 6ND is a constraint, N and D have only one degree of freedom betwe
 That was distinctly counter-intuitive when published in 2022, because prevailing models were parameter-rich and data-poor — by this criterion they should have spent the same compute on a model half the size with twice the data, and done better.
 
 You can see the resulting U in the experiment above: at fixed compute, both too small a model (data glut) and too large a model (data starvation) worsen the loss, with an optimum in between.
+
+@fig lm3-chinchilla
 
 ## Yet everyone deliberately departs from it today
 

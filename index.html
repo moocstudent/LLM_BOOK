@@ -14,8 +14,8 @@
   rel="stylesheet"
 />
 
-<link rel="stylesheet" href="styles.css?v=2" />
-<link rel="stylesheet" href="llm.css?v=2" />
+<link rel="stylesheet" href="styles.css?v=12" />
+<link rel="stylesheet" href="llm.css?v=12" />
 </head>
 <body>
   <div id="root"></div>
@@ -28,15 +28,20 @@
   <!-- Markdown -->
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 
-  <!-- App scripts (order matters: viz.jsx defines the shared helpers viz2.jsx and
-       viz3.jsx use, and viz3.jsx defines the VIZ registry + <Viz> that pages.jsx
-       renders). ?v is bumped on each release to bust caches. -->
-  <script type="text/babel" src="i18n.jsx?v=2"></script>
-  <script type="text/babel" src="data.jsx?v=2"></script>
-  <script type="text/babel" src="viz.jsx?v=2"></script>
-  <script type="text/babel" src="viz2.jsx?v=2"></script>
-  <script type="text/babel" src="viz3.jsx?v=2"></script>
-  <script type="text/babel" src="pages.jsx?v=2"></script>
-  <script type="text/babel" src="app.jsx?v=2"></script>
+  <!-- App scripts (order matters: viz.jsx defines the shared helpers viz2.jsx,
+       viz3.jsx and figures*.jsx use; viz3.jsx defines the VIZ registry + <Viz>;
+       figures.jsx defines the figure primitives + FIGN registry that
+       figures2/3.jsx extend, and figures3.jsx exports <Figure>. pages.jsx
+       renders both. ?v is bumped on each release to bust caches. -->
+  <script type="text/babel" src="i18n.jsx?v=12"></script>
+  <script type="text/babel" src="data.jsx?v=12"></script>
+  <script type="text/babel" src="viz.jsx?v=12"></script>
+  <script type="text/babel" src="viz2.jsx?v=12"></script>
+  <script type="text/babel" src="viz3.jsx?v=12"></script>
+  <script type="text/babel" src="figures.jsx?v=12"></script>
+  <script type="text/babel" src="figures2.jsx?v=12"></script>
+  <script type="text/babel" src="figures3.jsx?v=12"></script>
+  <script type="text/babel" src="pages.jsx?v=12"></script>
+  <script type="text/babel" src="app.jsx?v=12"></script>
 </body>
 </html>

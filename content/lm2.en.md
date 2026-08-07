@@ -4,6 +4,8 @@ Before any text reaches the model it is split into tokens and mapped to integers
 
 That single fact explains a whole family of odd behaviours, which we will match up one by one below.
 
+@fig lm2-ids
+
 ## Why neither characters nor words
 
 Two obvious schemes both fail:
@@ -14,6 +16,8 @@ Two obvious schemes both fail:
 
 **Subword splitting** is the compromise between the two, and what every mainstream model does today: common words are one token, rare words break into meaningful fragments, any string is representable, and the vocabulary stays between tens of thousands and a couple hundred thousand.
 
+@fig lm2-tradeoff
+
 ## How BPE builds the vocabulary
 
 Byte-pair encoding trains by a procedure simple enough to do on paper:
@@ -23,6 +27,8 @@ Byte-pair encoding trains by a procedure simple enough to do on paper:
 3. Repeat step 2 until the vocabulary reaches its target size.
 
 For example: if `l` and `o` are frequently adjacent, `lo` gets merged; later, if `lo` and `w` are frequently adjacent, `low` becomes a token. **So the tokens in the vocabulary are not linguistic units but statistically frequent fragments.** This is also why the same word can split differently depending on context, and why `" the"` with a leading space is usually a different token from `"the"` without one.
+
+@fig lm2-bpe
 
 ## Four real consequences
 

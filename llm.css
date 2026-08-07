@@ -740,3 +740,70 @@
 .lm-matrix td.click { cursor: pointer; }
 .lm-stack { display: flex; height: 26px; border: 1px solid var(--ink); border-radius: 2px; overflow: hidden; margin-top: 6px; }
 .lm-stack > div { display: flex; align-items: center; justify-content: center; font: 500 10px var(--f-mono); color: var(--bg); overflow: hidden; white-space: nowrap; transition: width 0.35s; }
+
+/* =========================================================
+   Lecture figures (@fig markers in content/*.md)
+   Static, theme-aware SVG diagrams rendered inline between
+   the markdown paragraphs of the "解释 / explanation" notes.
+   ========================================================= */
+.lm-fig { margin: 26px 0 26px; }
+.lm-fig-svg {
+  display: block; width: 100%; height: auto;
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-lg);
+}
+.lm-fig figcaption {
+  margin-top: 9px; padding-left: 10px;
+  border-left: 2px solid var(--accent);
+  font: 400 12.5px/1.6 var(--f-body); color: var(--muted);
+}
+.lm-fig figcaption .fno {
+  font: 600 11px var(--f-mono); color: var(--ink);
+  letter-spacing: 0.06em; margin-right: 7px;
+}
+
+/* text roles inside a figure */
+.lm-fig-svg .tt { fill: var(--ink);   font: 600 13px var(--f-body); }
+.lm-fig-svg .t  { fill: var(--ink);   font: 500 12px var(--f-body); }
+.lm-fig-svg .ts { fill: var(--ink-soft); font: 400 11px var(--f-body); }
+.lm-fig-svg .tn { fill: var(--muted); font: 400 10px var(--f-mono); }
+.lm-fig-svg .tm { fill: var(--muted); font: 500 11px var(--f-mono); }
+.lm-fig-svg .tk { fill: var(--ink);   font: 600 11px var(--f-mono); }
+.lm-fig-svg .ta { fill: var(--accent); font: 600 11px var(--f-mono); }
+.lm-fig-svg .tp { fill: var(--primary); font: 600 11px var(--f-mono); }
+
+/* boxes: default / primary / accent / muted / dashed ghost */
+.lm-fig-svg .bx   { fill: var(--bg); stroke: var(--hairline-strong); stroke-width: 1; }
+.lm-fig-svg .bx.p { fill: color-mix(in srgb, var(--primary) 13%, var(--bg)); stroke: var(--primary); }
+.lm-fig-svg .bx.a { fill: color-mix(in srgb, var(--accent) 13%, var(--bg));  stroke: var(--accent); }
+.lm-fig-svg .bx.m { fill: var(--surface); stroke: var(--hairline); }
+.lm-fig-svg .bx.g { fill: none; stroke: var(--hairline-strong); stroke-dasharray: 4 3; }
+
+/* strokes */
+.lm-fig-svg .ln   { stroke: var(--muted); stroke-width: 1.25; fill: none; }
+.lm-fig-svg .ln.a { stroke: var(--accent); }
+.lm-fig-svg .ln.p { stroke: var(--primary); }
+.lm-fig-svg .ln.f { stroke: var(--hairline-strong); }
+.lm-fig-svg .ln.d { stroke-dasharray: 4 3; }
+.lm-fig-svg .grid { stroke: var(--hairline); stroke-width: 1; }
+.lm-fig-svg .axis { stroke: var(--hairline-strong); stroke-width: 1; }
+.lm-fig-svg .cv   { fill: none; stroke: var(--primary); stroke-width: 2; }
+.lm-fig-svg .cv.a { stroke: var(--accent); }
+.lm-fig-svg .cv.m { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 3; }
+
+/* fills */
+.lm-fig-svg .fp { fill: var(--primary); }
+.lm-fig-svg .fa { fill: var(--accent); }
+.lm-fig-svg .fm { fill: var(--hairline-strong); }
+.lm-fig-svg .fs { fill: var(--surface); }
+.lm-fig-svg .fmid { fill: var(--muted); }
+.lm-fig-svg .fdim { fill: var(--ink-soft); }
+.lm-fig-svg .fb { fill: var(--bg); }
+.lm-fig-svg .areap { fill: color-mix(in srgb, var(--primary) 14%, transparent); stroke: none; }
+.lm-fig-svg .areaa { fill: color-mix(in srgb, var(--accent) 14%, transparent); stroke: none; }
+
+@media (max-width: 720px) {
+  .lm-fig { margin: 20px 0; }
+  .lm-fig figcaption { font-size: 12px; }
+}

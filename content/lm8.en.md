@@ -24,6 +24,8 @@ That explains two things you will hit in practice: first, "supports 128K context
 
 Incidentally, that `kv_heads` term reflects an important modern optimisation: early models had as many KV heads as query heads (32, say), until it turned out that letting several query heads share one set of KV (grouped-query attention, GQA) shrinks the cache several-fold at almost no quality cost. It is an architectural decision made purely for inference economics.
 
+@fig lm8-cache
+
 ## Prefill and decode are two entirely different workloads
 
 A request has two phases with completely different bottlenecks.
@@ -35,6 +37,8 @@ A request has two phases with completely different bottlenecks.
 That distinction has an important corollary: **during decode the compute units sit nearly idle.** The chip waits for weights to arrive from memory. So if you can process several requests at once, one pass over the weights serves the whole batch: throughput rises nearly linearly while latency barely moves.
 
 **That is the entire principle behind batching**, and why continuous batching — requests joining and leaving without waiting for a batch boundary — became standard in modern inference servers.
+
+@fig lm8-phases
 
 ## How to answer the customer's question
 

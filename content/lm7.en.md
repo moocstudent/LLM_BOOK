@@ -23,6 +23,8 @@ Practical defaults:
 | Creative writing, brainstorming | 0.8–1.1 | diversity is the point |
 | Code | 0–0.3 | one wrong character and it does not run |
 
+@fig lm7-temp
+
 ## The truncation family: top-k and top-p
 
 Temperature changes the shape; truncation changes the candidate set.
@@ -34,6 +36,8 @@ Temperature changes the shape; truncation changes the candidate set.
 The two can be combined (top-k then top-p), which is how the experiment above computes it. Drag top-p to 0.5 and watch the pool shrink.
 
 One more often-forgotten parameter: **repetition penalty**. It lowers the score of tokens already emitted, suppressing the degenerate loop where the model recites the same sentence. But it is a blunt instrument — it equally penalises words that legitimately should repeat (variable names in code, proper nouns), so it should be off or very small for code and structured output.
+
+@fig lm7-topk
 
 ## Genuinely deterministic output
 

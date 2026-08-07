@@ -14,6 +14,8 @@ Smaller groups fit the local distribution better and raise accuracy; but scale f
 
 That is what the group-size knob in the experiment means — you can watch it move memory and perplexity at the same time.
 
+@fig lm9-bits
+
 ## Post-training quantization vs quantization-aware training
 
 **Post-training quantization (PTQ)**: compress an already-trained model directly. Fast (minutes to hours), needing no training data or only a few hundred calibration samples. This is what almost every situation should use.
@@ -21,6 +23,8 @@ That is what the group-size knob in the experiment means — you can watch it mo
 **Quantization-aware training (QAT)**: simulate quantization error during training so the model learns to work at low precision. Better results, but requires retraining.
 
 The practical middle ground today is calibrated PTQ: use a few hundred representative samples to measure activation distributions per layer, then optimise the choice of scale factors accordingly. Clear benefit at low cost. **The calibration data should come from your own real workload** — commonly overlooked, and sometimes worth half the degradation.
+
+@fig lm9-ptq-qat
 
 ## Which tasks are quantization-sensitive
 

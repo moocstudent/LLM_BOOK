@@ -12,6 +12,8 @@ The loss curve is your only instrument panel during training. It can say four th
 
 Note the last one is only visible if you have a validation set. **Training without one is driving with your eyes closed** — training loss will descend all the way to zero, and that is precisely the model memorising the exam.
 
+@fig lm6-shapes
+
 ## LR schedules: why warm up
 
 Nearly all modern training uses one shape: linear ramp from zero to a peak (warmup), then cosine decay toward zero.
@@ -21,6 +23,8 @@ Nearly all modern training uses one shape: linear ramp from zero to a peak (warm
 **Decay addresses final precision.** A large learning rate approaches the basin quickly but cannot settle into it — it keeps bouncing around nearby. Decay shrinks the late-stage step size so the run can land lower. The cosine shape works well in practice, though linear decay is barely different; there is no magic here.
 
 Concrete advice for fine-tuning: **use 3%–10% of total steps for warmup, no more.** Fine-tuning has few steps to begin with, and an overlong warmup means you never actually train at the peak rate.
+
+@fig lm6-lr
 
 ## Gradient clipping and mixed precision
 
