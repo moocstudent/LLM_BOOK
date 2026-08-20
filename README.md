@@ -3,7 +3,7 @@
 中英双语的大语言模型自学站,**重点讲透微调**。每章先动手做一个可交互的「训练场实验」,再读「解释」。
 A bilingual (Chinese/English) self-study course on large language models with a deep focus on fine-tuning. Every chapter opens with an interactive experiment, then explains the mechanics behind it.
 
-- **8 模块 / 24 章 / 24 个可交互实验**,约 116 小时
+- **8 模块 / 25 章 / 25 个可交互实验**,约 120 小时
 - 无构建步骤:React 18 UMD + Babel standalone + marked,直接用静态服务器打开
 - 浅色/深色主题、中英切换、进度保存在 localStorage(`llm_book_*`),无需登录
 - 不绑定任何框架或厂商;所有公式都给可手算的量级估计
@@ -23,7 +23,7 @@ python -m http.server 5700 --directory D:/webcode/LLM_BOOK
 |---|---|---|---|
 | I | FM | 模型基础 — 注意力、分词、缩放定律 | lm1–lm3 |
 | II | PT | 预训练与算力 — 数据流水线、6ND 预算、训练稳定性 | lm4–lm6 |
-| III | IN | 推理基础 — 解码策略、KV 缓存、量化 | lm7–lm9 |
+| III | IN | 推理基础 — 解码策略、KV 缓存、量化、本地部署可行性 | lm7–lm9, lm25 |
 | IV | PR | 提示与上下文 — 提示工程、工具调用、RAG vs 微调 | lm10–lm12 |
 | V | FT | **微调基础** — 何时该微调、SFT 数据集、超参与训练动态 | lm13–lm15 |
 | VI | PE | **参数高效微调** — LoRA、QLoRA 与显存账本、方法对比 | lm16–lm18 |
@@ -37,10 +37,10 @@ python -m http.server 5700 --directory D:/webcode/LLM_BOOK
 ```
 index.html      入口,按顺序加载下面的 jsx(顺序不能改)
 i18n.jsx        UI 文案字典 + 语言状态(localStorage: llm_book_lang)
-data.jsx        课程元数据:8 个 MODULES + 24 个 CHAPTERS
+data.jsx        课程元数据:8 个 MODULES + 25 个 CHAPTERS
 viz.jsx         共享组件(Slider/Kpi/Bar/LinePlot…) + L1–L3 的 9 个实验
 viz2.jsx        L4–L6 的 9 个实验(依赖 viz.jsx 的辅助函数)
-viz3.jsx        L7–L8 的 6 个实验 + VIZ 注册表 + <Viz>
+viz3.jsx        L7–L8 的 6 个实验 + IN4 部署沙盘 + VIZ 注册表 + <Viz>
 pages.jsx       首页 / 模块页 / 章节页 / 关于页
 app.jsx         路由、主题、进度、导航
 styles.css      设计系统(与 MATH_BOOK 系列同源)

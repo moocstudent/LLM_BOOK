@@ -1,5 +1,5 @@
 /* =========================================================
-   figures3.jsx — lecture figures for lm17–lm24
+   figures3.jsx — lecture figures for lm17–lm24 and lm25 (IN4)
    (PE2 显存 · PE3 PEFT · AL1–AL3 对齐 · EV1–EV3 评估上线)
    Also exports the registry and the <Figure> component that
    pages.jsx renders in place of an "@fig <key>" line.
@@ -579,6 +579,121 @@ FIGN["lm24-ladder"] = ({ idx }) => {
       <FT x={498} y={24} c="tn">{L("投入 →", "effort →")}</FT>
       <FT x={16} y={238} c="tn" w={628}>{L("延迟要分开优化:TTFT 归 prefill(缩短提示、前缀缓存),吐字速度归 decode(小模型、量化、推测解码)。",
         "Optimise latency in two halves: TTFT belongs to prefill (shorter prompts, prefix caching), throughput to decode (smaller model, quantization, speculative decoding).")}</FT>
+    </FigFrame>
+  );
+};
+
+
+/* =========================================================
+   IN4 · lm25 — 本地部署可行性
+   ========================================================= */
+
+/* 卸载陷阱:同一个模型,权重在哪里决定了每 token 的时间去了哪里 */
+FIGN["lm25-offload"] = ({ idx }) => {
+  const L = useL();
+  // Two scenarios for ChatGLM3-6B (11.6 GB bf16) on the measured laptop.
+  const rows = [
+    {
+      n: L("权重全部驻留内存", "all weights resident"),
+      sub: L("可用 13.1 GB", "13.1 GB available"),
+      ram: 11.6, disk: 0, t: L("0.64 秒/token", "0.64 s/token"), ok: true,
+    },
+    {
+      n: L("可用内存只有 4.85 GB", "only 4.85 GB available"),
+      sub: L("实测配置", "the measured setup"),
+      ram: 3.35, disk: 8.28, t: L("48.4 秒/token", "48.4 s/token"), ok: false,
+    },
+  ];
+  const X = 168, W = 300, SC = W / 11.63;
+  return (
+    <FigFrame h={252} idx={idx}
+      cap={L("两种情形的权重体积完全一样(11.6 GB),差别只在「放在哪」。上面一行全部读自内存;下面一行有 8.28 GB 每生成一个 token 都要重新从磁盘读一遍。时间轴按对数压缩过——真实差距是 75 倍,画不下。",
+        "Both scenarios move exactly the same 11.6 GB of weights; the only difference is where they live. The top row reads entirely from RAM; the bottom re-reads 8.28 GB from disk for every single token. The time axis is log-compressed — the real gap is 75×, too wide to draw.")}>
+      <FT x={16} y={22} c="tt">{L("同样 11.6 GB 权重,每 token 的时间去哪了", "the same 11.6 GB, and where each token's time goes")}</FT>
+
+      {/* legend */}
+      <rect x={396} y={12} width={11} height={11} rx={2} className="fp" fillOpacity={0.9} />
+      <FT x={412} y={22} c="tn">{L("读自内存", "from RAM")}</FT>
+      <rect x={492} y={12} width={11} height={11} rx={2} className="fa" fillOpacity={0.85} />
+      <FT x={508} y={22} c="tn">{L("读自磁盘", "from disk")}</FT>
+
+      {rows.map((r, i) => {
+        const y = 52 + i * 96;
+        const wRam = r.ram * SC, wDisk = r.disk * SC;
+        return (
+          <g key={i}>
+            <FT x={16} y={y + 16} c="t" w={144}>{r.n}</FT>
+            <FT x={16} y={y + 32} c="tn" w={144}>{r.sub}</FT>
+            {/* where the weights physically are */}
+            <rect x={X} y={y} width={wRam} height={22} rx={2} className="fp" fillOpacity={0.9} />
+            {wDisk > 0 && (
+              <rect x={X + wRam} y={y} width={wDisk} height={22} rx={2} className="fa" fillOpacity={0.85} />
+            )}
+            <FT x={X + wRam / 2} y={y + 15} c="tn" a="middle">{`${r.ram} GB`}</FT>
+            {wDisk > 0 && <FT x={X + wRam + wDisk / 2} y={y + 15} c="tn" a="middle">{`${r.disk} GB`}</FT>}
+            {/* per-token time, log-compressed */}
+            <FT x={X} y={y + 46} c="tn">{L("每 token 耗时", "time per token")}</FT>
+            <rect x={X} y={y + 52} width={Math.max(4, Math.log10(1 + (r.ok ? 0.64 : 48.4) * 20) * 62)} height={13}
+              rx={2} className={r.ok ? "fp" : "fa"} fillOpacity={r.ok ? 0.55 : 0.85} />
+            <FT x={X + Math.max(4, Math.log10(1 + (r.ok ? 0.64 : 48.4) * 20) * 62) + 8} y={y + 63}
+              c={r.ok ? "tp" : "ta"}>{r.t}</FT>
+          </g>
+        );
+      })}
+
+      <FT x={16} y={238} c="tn" w={628}>
+        {L("加载日志里那句 \"Some parameters are on the meta device because they were offloaded to the disk and cpu\" 就是下面这一行的自白;而「11.6 GB 六秒加载完」是同一件事的另一个症状——它根本没读进内存。",
+          "The loader's line — \"Some parameters are on the meta device because they were offloaded to the disk and cpu\" — is the bottom row confessing; and \"11.6 GB loaded in six seconds\" is the same fact wearing a different hat: nothing was actually read.")}
+      </FT>
+    </FigFrame>
+  );
+};
+
+/* 屋顶线:单条对话的解码速度上限 = 带宽 ÷ 权重体积 */
+FIGN["lm25-roofline"] = ({ idx }) => {
+  const L = useL();
+  // ceiling = effective bandwidth / weight bytes; bars are log-scaled
+  const rows = [
+    { n: L("笔记本 CPU · bf16", "laptop CPU · bf16"), bw: "54 GB/s", v: 4.6, real: 1.6, k: "fa" },
+    { n: L("笔记本 CPU · int4", "laptop CPU · int4"), bw: "54 GB/s", v: 18.6, real: 11.2, k: "fa" },
+    { n: L("RTX 3060 · bf16", "RTX 3060 · bf16"), bw: "288 GB/s", v: 24.8, real: 24.8, k: "fp" },
+    { n: L("RTX 4090 · bf16", "RTX 4090 · bf16"), bw: "806 GB/s", v: 69.4, real: 69.4, k: "fp" },
+    { n: L("A100 · bf16", "A100 · bf16"), bw: "1631 GB/s", v: 140, real: 140, k: "fp" },
+  ];
+  const X = 190, W = 330;
+  const lg = (v) => Math.log10(1 + v) / Math.log10(1 + 160);
+  return (
+    <FigFrame h={252} idx={idx}
+      cap={L("单条对话的解码是带宽受限的:每生成一个 token 都要把全部权重读一遍,所以上限就是「带宽 ÷ 权重体积」。GPU 快,首先快在显存带宽上——算力只在批处理时才成为主角。横轴为对数刻度。",
+        "Single-stream decoding is bandwidth-bound: every token reads all the weights once, so the ceiling is simply bandwidth ÷ weight size. A GPU is fast first because of memory bandwidth — compute only takes the lead once you batch. The x-axis is logarithmic.")}>
+      <FT x={16} y={22} c="tt">{L("ChatGLM3-6B 单流解码上限", "ChatGLM3-6B single-stream ceiling")}</FT>
+      <rect x={392} y={12} width={11} height={11} rx={2} className="fm" fillOpacity={0.4} />
+      <FT x={408} y={22} c="tn">{L("带宽上限", "ceiling")}</FT>
+      <rect x={486} y={12} width={11} height={11} rx={2} className="fp" fillOpacity={0.9} />
+      <FT x={502} y={22} c="tn">{L("实际可期", "realistic")}</FT>
+
+      {rows.map((r, i) => {
+        const y = 44 + i * 34;
+        return (
+          <g key={i}>
+            <FT x={16} y={y + 15} c="t">{r.n}</FT>
+            <FT x={150} y={y + 15} c="tn" a="end">{r.bw}</FT>
+            <rect x={X} y={y + 3} width={Math.max(3, lg(r.v) * W)} height={18} rx={2}
+              className="fm" fillOpacity={0.34} />
+            <rect x={X} y={y + 3} width={Math.max(3, lg(r.real) * W)} height={18} rx={2}
+              className={r.k} fillOpacity={0.9} />
+            <FT x={X + Math.max(3, lg(r.v) * W) + 8} y={y + 16} c="tn">
+              {r.real === r.v ? `${r.v}` : `${r.real} / ${r.v}`}
+            </FT>
+          </g>
+        );
+      })}
+      <FT x={X + W - 6} y={228} c="tn" a="end">{L("token/秒(对数)", "tokens/s (log)")}</FT>
+      <line x1={X} x2={X + W} y1={216} y2={216} className="axis" />
+      <FT x={16} y={240} c="tn" w={628}>
+        {L("前两行的「实际可期」低于上限,是因为 Alder Lake 没有 AVX-512/AMX,bf16 要转成 fp32 再算——付了带宽的钱,没拿到算力的货。注意 int4 让 CPU 一行直接跨过了可用门槛。",
+          "The first two rows fall short of their ceiling because Alder Lake lacks AVX-512/AMX and must widen bf16 to fp32 before multiplying — paying bandwidth's price without collecting compute's goods. Note that int4 alone carries the CPU row across the usability threshold.")}
+      </FT>
     </FigFrame>
   );
 };

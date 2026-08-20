@@ -604,6 +604,167 @@ const ProdCostViz = () => {
 };
 
 /* =========================================================
+   IN4 · localDeploy — will this machine actually run it
+   ---------------------------------------------------------
+   Calibrated against a real measurement taken on the machine
+   described in content/lm25.*.md: ChatGLM3-6B, bf16, a 15.7GB
+   LPDDR5-5200 laptop with 4.85GB available and no CUDA —
+   629.3s for 13 tokens = 48.4 s/token. The default state of
+   this sandbox reproduces that number.
+   ========================================================= */
+const LD_MODELS = [
+  { v: "1b", l: "1.5B", params: 1.5e9 },
+  { v: "6b", l: "ChatGLM3-6B", params: 6.24e9 },
+  { v: "7b", l: "7B", params: 7e9 },
+  { v: "13b", l: "13B", params: 13e9 },
+];
+const LD_DEVICES = [
+  { v: "lap", l: { zh: "笔记本 CPU · 16GB LPDDR5", en: "Laptop CPU · 16GB LPDDR5" }, mem: 15.7, bw: 83, kind: "cpu" },
+  { v: "desk", l: { zh: "台式 CPU · 32GB DDR5", en: "Desktop CPU · 32GB DDR5" }, mem: 32, bw: 90, kind: "cpu" },
+  { v: "3060", l: { zh: "RTX 3060 · 12GB", en: "RTX 3060 · 12GB" }, mem: 12, bw: 360, kind: "gpu" },
+  { v: "4090", l: { zh: "RTX 4090 · 24GB", en: "RTX 4090 · 24GB" }, mem: 24, bw: 1008, kind: "gpu" },
+  { v: "a100", l: { zh: "A100 · 80GB", en: "A100 · 80GB" }, mem: 80, bw: 2039, kind: "gpu" },
+];
+/* Effective disk throughput under accelerate's per-layer on-demand reads.
+   Back-solved from the real 48.4 s/token measurement — far below NVMe
+   sequential speed because the pattern is seek + deserialize per layer. */
+const LD_DISK_BW = 0.1726; // GiB/s
+
+const LocalDeployViz = () => {
+  const L = useL();
+  const [mv, setMv] = React.useState("6b");
+  const [bits, setBits] = React.useState(16);
+  const [dv, setDv] = React.useState("lap");
+  const [used, setUsed] = React.useState(10.9);
+  const [offload, setOffload] = React.useState(true);
+
+  const m = LD_MODELS.find((x) => x.v === mv);
+  const d = LD_DEVICES.find((x) => x.v === dv);
+  const isCpu = d.kind === "cpu";
+  const devOpts = LD_DEVICES.map((x) => ({ v: x.v, l: L(x.l.zh, x.l.en) }));
+
+  const GiB = 1024 ** 3;
+  const wGB = (m.params * (bits / 8)) / GiB;
+  const overhead = isCpu ? 1.5 : 1.0;
+  const otherUse = isCpu ? Math.min(used, d.mem - 0.5) : 0.6;
+  const capacity = Math.max(0, d.mem - otherUse - overhead);
+  const fits = wGB <= capacity;
+
+  // Bandwidth actually reachable, then the penalty for bf16 without hardware support.
+  const memBw = d.bw * (isCpu ? 0.65 : 0.8);
+  const dtypePenalty = isCpu ? (bits >= 16 ? 0.35 : 0.6) : 1;
+  const bwCeil = memBw / wGB;             // pure roofline, tok/s
+  const residentGB = Math.min(wGB, capacity);
+  const offloadGB = Math.max(0, wGB - residentGB);
+
+  const tResident = residentGB / memBw;
+  const tOffload = offloadGB / LD_DISK_BW;
+  const secPerTok = fits
+    ? 1 / (bwCeil * dtypePenalty)
+    : (tResident / dtypePenalty) + tOffload;
+  const tokS = 1 / secPerTok;
+  const runnable = fits || offload;
+  const offloadPct = wGB > 0 ? offloadGB / wGB : 0;
+  const diskShare = secPerTok > 0 ? (tOffload / secPerTok) * 100 : 0;
+  const diskShareTxt = diskShare > 99 ? `${nf(diskShare, 1)}%` : `${Math.round(diskShare)}%`;
+
+  // Is this the exact configuration that was measured?
+  const isMeasured = mv === "6b" && bits === 16 && dv === "lap" && offload && Math.abs(used - 10.9) < 0.35;
+
+  const verdict = !runnable
+    ? { t: L("起不来", "will not start"), tone: "warn" }
+    : offloadGB > 0.05
+      ? { t: L("会跑,但慢到不可用", "runs, unusably slowly"), tone: "warn" }
+      : tokS < 3
+        ? { t: L("跑得动,偏慢", "runs, on the slow side"), tone: "" }
+        : { t: L("跑得动", "runs fine"), tone: "ok" };
+
+  return (
+    <div>
+      <VizHead idx="IN4" title={L("部署沙盘:下载 12GB 之前先把结论算出来", "Deployment sandbox: reach the verdict before downloading 12GB")} />
+      <div className="viz-ctrl">
+        <Choice label={L("模型", "Model")} value={mv} onChange={setMv} options={LD_MODELS} />
+        <Slider label={L("权重精度", "Weight bits")} min={4} max={16} step={4} value={bits} onChange={setBits} unit=" bit" />
+        <Choice label={L("设备", "Device")} value={dv} onChange={setDv} options={devOpts} />
+        {isCpu && (
+          <Slider label={L("其他程序占用", "Used by other programs")} min={0} max={14} step={0.1}
+            value={used} onChange={setUsed} unit=" GB" />
+        )}
+        <label><span>{L("device_map=\"auto\"", "device_map=\"auto\"")}</span>
+          <Seg value={offload ? "on" : "off"} onChange={(v) => setOffload(v === "on")}
+            options={[{ v: "on", l: L("允许卸载", "allow offload") }, { v: "off", l: L("禁止", "off") }]} /></label>
+      </div>
+
+      <div className="lm-bars" style={{ marginTop: 14 }}>
+        <Bar label={L("模型权重", "Weights")} value={wGB} max={d.mem}
+          tone={fits ? "acc" : "warn"} valText={`${nf(wGB, 1)} GB`} />
+        <Bar label={L("其他程序 + 运行时", "Other programs + runtime")} value={otherUse + overhead} max={d.mem}
+          valText={`${nf(otherUse + overhead, 1)} GB`} />
+        <Bar label={L("权重可用空间", "Space left for weights")} value={capacity} max={d.mem}
+          tone={fits ? "ok" : "warn"} valText={`${nf(capacity, 1)} / ${d.mem} GB`} />
+        {offloadGB > 0.05 && (
+          <Bar label={L("被卸载到磁盘", "Offloaded to disk")} value={offloadGB} max={wGB}
+            tone="warn" valText={`${nf(offloadGB, 1)} GB · ${pct(offloadPct)}`} />
+        )}
+      </div>
+
+      <div className="lm-kpi-grid" style={{ marginTop: 14, gridTemplateColumns: "repeat(4, 1fr)" }}>
+        <Kpi label={L("判定", "Verdict")} value={verdict.t} tone={verdict.tone} />
+        <Kpi label={L("带宽上限", "Bandwidth ceiling")} value={nf(bwCeil, 1)} unit=" tok/s"
+          hint={L("权重全驻留时", "if fully resident")} />
+        <Kpi label={L("预计速度", "Estimated speed")} value={tokS >= 1 ? nf(tokS, 2) : nf(tokS, 3)} unit=" tok/s"
+          tone={tokS < 1 ? "warn" : tokS > 5 ? "ok" : ""} />
+        <Kpi label={L("每 token", "Per token")}
+          value={secPerTok < 1 ? `${nf(secPerTok * 1000, 0)} ms` : `${nf(secPerTok, 1)} s`}
+          tone={secPerTok > 5 ? "warn" : ""} />
+      </div>
+
+      <div className="lm-steps" style={{ marginTop: 12 }}>
+        {isMeasured && (
+          <div className="lm-step now"><span className="sn">★</span><div>
+            {L(`这正是本章那台实测机器的配置。真实测量结果:629.3 秒生成 13 个 token,即 48.4 秒/token、0.021 tok/s。沙盘算出 ${nf(secPerTok, 1)} 秒/token——模型的磁盘吞吐常数就是从这次测量反推出来的,所以这里对得上是设计使然,不是独立验证。`,
+              `This is the exact configuration of the machine measured for this chapter. The real result: 13 tokens in 629.3 seconds — 48.4 s/token, 0.021 tok/s. The sandbox computes ${nf(secPerTok, 1)} s/token. The disk-throughput constant was back-solved from that measurement, so the agreement here is by construction, not independent validation.`)}
+          </div></div>
+        )}
+        {!runnable && (
+          <div className="lm-step now"><span className="sn">!</span><div>
+            {L(`权重比可用空间多 ${nf(wGB - capacity, 1)} GB,而卸载被禁止,所以进程会直接 OOM 退出。这其实是好消息——你立刻知道要换方案,而不是等一个小时才发现慢得没法用。`,
+              `The weights exceed available space by ${nf(wGB - capacity, 1)} GB and offloading is disabled, so the process will die with an OOM. That is the good outcome — you learn immediately, instead of discovering after an hour that it is unusably slow.`)}
+          </div></div>
+        )}
+        {runnable && offloadGB > 0.05 && (
+          <div className="lm-step now"><span className="sn">!</span><div>
+            {L(`${pct(offloadPct)} 的权重放不进内存,被卸载到磁盘。每生成一个 token 都要把这 ${nf(offloadGB, 1)} GB 重新读一遍,这 ${nf(secPerTok, 1)} 秒里有 ${diskShareTxt} 花在磁盘上。加载时你会看到 "offloaded to the disk and cpu",而且加载快得不合理——因为它根本没读进内存。`,
+              `${pct(offloadPct)} of the weights do not fit and are offloaded to disk. Every token re-reads those ${nf(offloadGB, 1)} GB, and ${diskShareTxt} of those ${nf(secPerTok, 1)}s goes to the disk. At load time you will see "offloaded to the disk and cpu" — and loading will be implausibly fast, because nothing was actually read.`)}
+          </div></div>
+        )}
+        {isCpu && bits >= 16 && fits && (
+          <div className="lm-step"><span className="sn">i</span><div>
+            {L(`纯 CPU 上 bf16 没有硬件乘法支持(Alder Lake 只有 AVX2/AVX-VNNI,没有 AVX-512 与 AMX),PyTorch 要先转成 fp32 再算。所以你付了 bf16 的带宽,却拿不到对应的计算加速——上限 ${nf(bwCeil, 1)} tok/s 实际只能跑到 ${nf(tokS, 2)}。`,
+              `On a pure CPU, bf16 has no hardware multiply behind it (Alder Lake has AVX2/AVX-VNNI but neither AVX-512 nor AMX), so PyTorch converts to fp32 first. You pay bf16's bandwidth without collecting its compute speedup — a ${nf(bwCeil, 1)} tok/s ceiling delivers only ${nf(tokS, 2)}.`)}
+          </div></div>
+        )}
+        {isCpu && bits === 4 && (
+          <div className="lm-step"><span className="sn">i</span><div>
+            {L("注意:ChatGLM3 自带的 quantization.py 第 126 行断言权重必须在 CUDA 设备上,它的 int4 路径在纯 CPU 上用不了。CPU 上要跑 int4,得换 llama.cpp / Ollama 的 GGUF 格式。",
+              "Note: line 126 of ChatGLM3's bundled quantization.py asserts the weights are on a CUDA device — its int4 path does not work on a pure CPU. For int4 on CPU you need GGUF via llama.cpp or Ollama.")}
+          </div></div>
+        )}
+        <div className="lm-step"><span className="sn">✓</span><div>
+          {L(`记住这条不等式:权重体积 ≤ 可用内存 − 运行时开销。现在是 ${nf(wGB, 1)} GB ${fits ? "≤" : ">"} ${nf(capacity, 1)} GB。它两分钟就能算完,而下载权重要半小时。`,
+            `Remember the inequality: weight size ≤ available memory − runtime overhead. Right now that reads ${nf(wGB, 1)} GB ${fits ? "≤" : ">"} ${nf(capacity, 1)} GB. It takes two minutes to evaluate; downloading the weights takes thirty.`)}
+        </div></div>
+      </div>
+
+      <p className="viz-caption">
+        {L("把「其他程序占用」从 2GB 拖到 10GB,看那条判定在什么位置翻转——它翻转得比直觉早得多,因为约束从来不是总内存,而是可用内存再减去运行时开销。这也是「我有 16GB,模型要 12GB,应该能跑」这个推理错在哪里:16 和 12 之间那 4GB 的余量,在真实桌面系统上根本不存在。",
+          "Sweep 'used by other programs' from 2GB to 10GB and watch where the verdict flips — considerably earlier than intuition suggests, because the constraint was never total memory but available memory minus runtime overhead. That is precisely where 'I have 16GB and the model needs 12GB, so it should run' goes wrong: the 4GB of headroom between those numbers does not exist on a real desktop.")}
+      </p>
+    </div>
+  );
+};
+
+/* =========================================================
    Registry — data.jsx `viz:` names map here
    ========================================================= */
 const VIZ = {
@@ -616,6 +777,7 @@ const VIZ = {
   /* L3 推理 */ decodingLab: () => <DecodingLabViz />,
   kvCache: () => <KvCacheViz />,
   quantLab: () => <QuantLabViz />,
+  localDeploy: () => <LocalDeployViz />,
   /* L4 提示与上下文 */ promptLab: () => <PromptLabViz />,
   toolCall: () => <ToolCallViz />,
   ragVsFt: () => <RagVsFtViz />,

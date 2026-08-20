@@ -1,5 +1,5 @@
 /* =========================================================
-   Curriculum data — 8 modules / 24 chapters
+   Curriculum data — 8 modules / 25 chapters
    ---------------------------------------------------------
    Metadata only (bilingual). The teaching content ("解释")
    for each chapter lives in content/<id>.<lang>.md and is
@@ -276,6 +276,28 @@ const CHAPTERS = [
       { zh: "训练后量化 vs 量化感知训练", en: "Post-training quantization vs quantization-aware training" },
       { zh: "蒸馏:让小模型学大模型的分布", en: "Distillation: teaching a small model the big one's distribution" },
       { zh: "量化后必做的评估", en: "The evaluation you must run afterwards" },
+    ],
+  },
+
+  {
+    id: "lm25", code: "IN4", moduleId: "l3", difficulty: 2, hours: 4, prereq: ["lm9"], viz: "localDeploy",
+    props: ["本地部署 / local deployment", "内存墙 / memory wall", "磁盘卸载 / disk offload", "屋顶线 / roofline", "device_map"],
+    title: { zh: "本地部署可行性:这台机器到底跑不跑得动", en: "Local Deployment: Will This Machine Actually Run It" },
+    summary: {
+      zh: "「6B 模型只要 12GB,我这台有 16GB 内存,应该能跑」——这个推理每天都在把人送进坑里。真实答案取决于三个数:权重装不装得下**可用**内存(而不是总内存)、装不下时框架会不会偷偷把权重卸载到磁盘、以及内存带宽给出的速度天花板。本章用一次真实测量当锚点:一台 16GB 无显卡的笔记本跑 ChatGLM3-6B,实测 48.4 秒才吐一个 token——比同款模型在消费级显卡上慢三个数量级,而慢的原因根本不是算力不够。本章给你一个部署沙盘,让你在下载 12GB 权重之前就把结论算出来。",
+      en: "'A 6B model needs 12GB, this machine has 16GB of RAM, so it should run' — that inference sends someone into a ditch every day. The real answer turns on three numbers: whether the weights fit in *available* memory rather than total memory, whether the framework silently offloads them to disk when they do not, and the speed ceiling set by memory bandwidth. This chapter is anchored on one real measurement: a 16GB laptop with no GPU running ChatGLM3-6B took 48.4 seconds to emit a single token — three orders of magnitude slower than the same model on a consumer GPU, for reasons that have nothing to do with compute. The sandbox lets you reach the verdict before downloading 12GB of weights.",
+    },
+    objectives: [
+      { zh: "区分「总内存」与「可用内存」,说清为什么只有后者是约束", en: "Separate total from available memory and say why only the latter binds" },
+      { zh: "识别磁盘卸载的三个症状,并解释加载过快为什么是坏消息", en: "Spot the three symptoms of disk offload — and why loading too fast is bad news" },
+      { zh: "用「带宽 ÷ 权重体积」估出解码速度的上限", en: "Bound decode speed with bandwidth divided by weight size" },
+      { zh: "在下载权重之前判断一台机器能不能跑某个模型", en: "Decide whether a machine can run a model before downloading it" },
+    ],
+    outline: [
+      { zh: "三个数:权重体积、可用内存、内存带宽", en: "Three numbers: weight size, available memory, bandwidth" },
+      { zh: "device_map=\"auto\" 的陷阱:静默卸载到磁盘", en: "The device_map=\"auto\" trap: silent disk offload" },
+      { zh: "屋顶线:为什么单条对话的解码是带宽受限的", en: "Roofline: why single-stream decode is bandwidth-bound" },
+      { zh: "一次真实测量的完整归因:48.4 秒/token 到底花在哪", en: "Attributing one real measurement: where 48.4 s/token actually goes" },
     ],
   },
 
